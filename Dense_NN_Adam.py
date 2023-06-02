@@ -1,7 +1,6 @@
-import numpy as np
 class DenseLayer:
     def __init__(self, input_size, output_size, activation=None, T=4):
-        self.weights = np.random.randn(input_size, output_size) * 0.01
+        self.weights = np.random.randn(input_size, output_size)
         self.biases = np.zeros(output_size)
         self.activation = activation
         self.T = T
@@ -34,10 +33,10 @@ class DenseLayer:
             grad_weights = [np.zeros_like(param) for param in self.weights]
             grad_biases = [np.zeros_like(param) for param in self.biases]
             for i in range(self.output_size):
-                s[i] = (ro_1 * s[i] + (1 - ro_1) * grad_output[i]) / (1 - ro_1 ** t + 1)
-                r[i] = (ro_2 * r[i] + (1 - ro_2) * grad_output[i] * grad_output[i]) / (1 - ro_2 ** t + 1)
-                s_b[i] = (ro_1 * s_b[i] + (1 - ro_1) * np.sum(grad_output)) / (1 - ro_1 ** t + 1)
-                r_b[i] = (ro_2 * r_b[i] + (1 - ro_2) * np.sum(grad_output) ** 2) / (1 - ro_2 ** t + 1)
+                s[i] = (ro_1 * s[i] + ((1 - ro_1) * grad_output[i])) / (1 - ro_1 ** (t + 1))
+                r[i] = (ro_2 * r[i] + ((1 - ro_2) * grad_output[i] * grad_output[i])) / (1 - ro_2 ** (t + 1))
+                s_b[i] = (ro_1 * s_b[i] + ((1 - ro_1) * np.sum(grad_output))) / (1 - ro_1 ** (t + 1))
+                r_b[i] = (ro_2 * r_b[i] + ((1 - ro_2) * np.sum(grad_output) ** 2)) / (1 - ro_2 ** (t + 1))
                 # grad_weights = np.dot(self.inputs.T, grad_output)
                 grad_weights[i] = s[i] / (np.sqrt(r[i]) + delta)
                 grad_biases[i] = s_b[i] / (np.sqrt(r_b[i]) + delta)
@@ -54,6 +53,7 @@ class DenseLayer:
             t += 1
         return grad_input
 
+
 class DenseNetwork:
     def __init__(self):
         self.layers = []
@@ -66,10 +66,8 @@ class DenseNetwork:
             inputs = layer.forward(inputs)
         return inputs
 
-    # def backward(self, grad_output, learning_rate,T = 1000):
     def backward(self, grad_output, learning_rate):
         for layer in reversed(self.layers):
-            # for t in range(T):
             grad_output = layer.backward(grad_output, learning_rate)
 
 
@@ -115,6 +113,7 @@ for epoch in range(num_epochs):
 
     # Compute loss (mean squared error)
     loss = np.mean((y_pred - y_train) ** 2)
+    # print(loss)
     #     print(f'epoch {epoch}:{loss}')
     # Backward pass
     grad_output = 2 * (y_pred - y_train) / len(X_train_scaled)
@@ -122,4 +121,9 @@ for epoch in range(num_epochs):
 
 # Predict with the DenseNetwork
 y_pred_dense = dense_net.forward(X_test_scaled)
-
+print('y_pred_dense: \n', y_pred_dense)
+print('y test: \n', y_test)
+print(y_pred_lr)
+# Compare the results
+print("Mean Squared Error (sklearn LinearRegression):", mean_squared_error(y_test, y_pred_lr))
+print("Mean Squared Error (DenseNetwork implemented from scratch):", mean_squared_error(y_test, y_pred_dense))
